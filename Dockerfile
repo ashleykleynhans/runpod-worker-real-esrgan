@@ -65,7 +65,7 @@ RUN git clone https://github.com/ashleykleynhans/runpod-worker-real-esrgan.git &
     cd runpod-worker-real-esrgan && \
     pip3 install git+https://github.com/XPixelGroup/BasicSR.git && \
     pip3 install -r requirements.txt && \
-    python3 setup.py develop && \
+    pip3 install -e . --no-deps && \
     python3 create_test_json.py && \
     python3 -u handler.py
 
