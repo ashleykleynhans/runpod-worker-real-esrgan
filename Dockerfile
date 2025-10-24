@@ -1,4 +1,5 @@
-FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04
+ARG CUDA_VERSION="12.4.1"
+FROM nvidia/cuda:${CUDA_VERSION}-cudnn-devel-ubuntu22.04
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PIP_PREFER_BINARY=1 \
@@ -50,7 +51,9 @@ RUN mkdir -p /workspace/models/ESRGAN && \
     wget -O /workspace/models/GFPGAN/GFPGANv1.3.pth https://github.com/TencentARC/GFPGAN/releases/download/v1.3.0/GFPGANv1.3.pth
 
 # Install Torch
-RUN pip3 install --no-cache-dir torch==2.6.0+cu124 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+ARG INDEX_URL="https://download.pytorch.org/whl/cu124"
+ARG TORCH_VERSION="2.6.0+cu124"
+RUN pip3 install --no-cache-dir torch==${TORCH_VERSION} torchvision torchaudio --index-url ${INDEX_URL}
 
 # 1. Clone the worker repo
 # 2. Install requirements
