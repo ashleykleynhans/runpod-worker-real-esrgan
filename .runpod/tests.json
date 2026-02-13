@@ -9,13 +9,14 @@
         "face_enhance": true,
         "half": false
       },
-      "timeout": 10000
+      "timeout": 30000
     }
   ],
   "config": {
     "gpuTypeId": "NVIDIA GeForce RTX 4090",
     "gpuCount": 1,
     "allowedCudaVersions": [
+      "13.0",
       "12.9",
       "12.8",
       "12.7",
