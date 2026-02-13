@@ -97,8 +97,10 @@ jobs:
       - name: Free up disk space
         run: |
           sudo swapoff -a
-          sudo rm -rf /swapfile /usr/share/dotnet /usr/local/lib/android /opt/ghc
-          sudo apt clean
+          sudo rm -rf /swapfile /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache
+          sudo apt-get remove -y '^dotnet-.*' '^llvm-.*' 'php.*' azure-cli google-chrome-stable firefox mono-devel powershell google-cloud-cli || true
+          sudo apt-get autoremove -y
+          sudo apt-get clean
           df -h
 
       - name: Set up Docker Buildx
@@ -116,13 +118,17 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Lowercase repository owner
+        id: repo-owner
+        run: echo "owner=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
       - name: Create temporary docker-bake override file
         run: |
           # Create an override file that forces ghcr.io
           cat > docker-bake.override.hcl << 'EOF'
           target "default" {
             inherits = ["default"]
-            tags = ["ghcr.io/${{ github.repository_owner }}/${{ needs.detect-changes.outputs.app }}:${{ needs.detect-changes.outputs.release }}"]
+            tags = ["ghcr.io/${{ steps.repo-owner.outputs.owner }}/${{ needs.detect-changes.outputs.app }}:${{ needs.detect-changes.outputs.release }}"]
           }
           EOF
 
@@ -147,14 +153,11 @@ jobs:
 
       - name: Verify image was pushed
         run: |
-          IMAGE="ghcr.io/${{ github.repository_owner }}/${{ needs.detect-changes.outputs.app }}:${{ needs.detect-changes.outputs.release }}"
+          IMAGE="ghcr.io/${{ steps.repo-owner.outputs.owner }}/${{ needs.detect-changes.outputs.app }}:${{ needs.detect-changes.outputs.release }}"
           echo "Verifying image: $IMAGE"
 
-          # Wait for registry to update
-          sleep 10
-
-          # Try to pull the image
-          docker pull $IMAGE && echo "✅ SUCCESS: Image verified: $IMAGE" || echo "❌ FAILED: Could not pull image: $IMAGE"
+          # Check the image exists in the registry without pulling it
+          docker manifest inspect $IMAGE && echo "SUCCESS: Image verified: $IMAGE" || echo "FAILED: Could not find image: $IMAGE"
 
       - name: List built image
         id: list-images
@@ -162,7 +165,7 @@ jobs:
           RELEASE="${{ needs.detect-changes.outputs.release }}"
           APP="${{ needs.detect-changes.outputs.app }}"
           REGISTRY="ghcr.io"
-          REGISTRY_USER="${{ github.repository_owner }}"
+          REGISTRY_USER="${{ steps.repo-owner.outputs.owner }}"
 
           # Create the image name
           IMAGE="${REGISTRY}/${REGISTRY_USER}/${APP}:${RELEASE}"
